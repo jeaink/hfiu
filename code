@@ -1,0 +1,320 @@
+import cv2
+import numpy as np
+import pyautogui
+import tkinter as tk
+from tkinter import ttk, messagebox
+from ttkthemes import ThemedTk
+from PIL import Image, ImageTk, ImageFilter
+import psutil
+import time
+import json
+import os
+
+# Global settings
+precision_aim = False
+flick_aim = False
+smooth_track = False
+sticky_aim = False
+lead_tracking = False
+sniper_mode = False
+tracking_smoothness = 0.5  # Default tracking smoothness
+auto_distance_adjustment = False
+crosshair_size = 5  # Default crosshair size
+dynamic_aim_lock = False
+no_snap_tracking = False
+gentle_flicks = False
+smooth_lead_tracking = False
+crosshair_visibility = 1.0  # Full visibility for Custom
+hard_lock_tracking = False
+bullet_curve_adjustment = False
+instant_reaction_aim = False
+esp_mode = False
+flick_speed = 1.0  # Default flick speed
+
+settings_file = "settings.json"
+image_path = "c:/Users/gemfa/OneDrive/Desktop/AI tracking/AI MODELS/Images/"
+
+def check_process(process_name):
+    """Check if a process is running."""
+    for proc in psutil.process_iter(attrs=['pid', 'name']):
+        if process_name.lower() in proc.info['name'].lower():
+            return True
+    return False
+
+def check_game_running():
+    """Check if GeForce Now or Epic Games and Fortnite are running."""
+    if not check_process("GeForceNOW.exe") and not check_process("EpicGamesLauncher.exe"):
+        return False, "Neither GeForce Now nor Epic Games Launcher is running! Please start one of them."
+    elif not check_process("FortniteClient-Win64-Shipping_BE.exe"):
+        return False, "Fortnite is not running! Please start Fortnite."
+    return True, ""
+
+def create_blurred_background(root):
+    """Create a blurred background effect using Pillow."""
+    try:
+        background_image = Image.open(os.path.join(image_path, "background_image.png"))  # Use an image for the background
+        blurred_image = background_image.filter(ImageFilter.GaussianBlur(radius=10))  # Apply blur effect
+        blurred_image = ImageTk.PhotoImage(blurred_image)
+
+        # Canvas to display the background image
+        canvas = tk.Canvas(root, width=1200, height=600)
+        canvas.place(x=0, y=0)
+        canvas.create_image(0, 0, image=blurred_image, anchor="nw")
+        return blurred_image
+    except FileNotFoundError:
+        print("Background image not found. Skipping background setup.")
+        return None
+
+def capture_screen():
+    """Capture the screen and return it as a numpy array."""
+    screenshot = pyautogui.screenshot()
+    frame = np.array(screenshot)
+    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+    return frame
+
+def detect_enemy(frame):
+    """Detect enemies in the frame using computer vision."""
+    # Placeholder for enemy detection logic
+    # You can use pre-trained models or custom models to detect enemies
+    # For simplicity, we'll use color detection as a placeholder
+    hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    lower_red = np.array([0, 120, 70])
+    upper_red = np.array([10, 255, 255])
+    mask = cv2.inRange(hsv_frame, lower_red, upper_red)
+    contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    return contours
+
+def aim_at_enemy(contours):
+    """Aim at the detected enemy."""
+    if contours:
+        largest_contour = max(contours, key=cv2.contourArea)
+        x, y, w, h = cv2.boundingRect(largest_contour)
+        center_x = x + w // 2
+        center_y = y + h // 2
+        screen_width, screen_height = pyautogui.size()
+        target_x = screen_width // 2
+        target_y = screen_height // 2
+        pyautogui.moveTo(center_x, center_y)
+        pyautogui.click()
+
+def apply_settings():
+    """Apply the selected settings."""
+    global precision_aim, flick_aim, smooth_track, sticky_aim, lead_tracking
+    global sniper_mode, tracking_smoothness, auto_distance_adjustment, crosshair_size
+    global dynamic_aim_lock, no_snap_tracking, gentle_flicks, smooth_lead_tracking
+    global crosshair_visibility, hard_lock_tracking, bullet_curve_adjustment
+    global instant_reaction_aim, esp_mode, flick_speed
+
+    # Ensure GeForce Now or Epic Games and Fortnite are running
+    game_running, message = check_game_running()
+    if not game_running:
+        messagebox.showerror("Error", message)
+        return
+
+    # Apply the settings
+    precision_aim = precision_aim_var.get()
+    flick_aim = flick_aim_var.get()
+    smooth_track = smooth_track_var.get()
+    sticky_aim = sticky_aim_var.get()
+    lead_tracking = lead_tracking_var.get()
+    sniper_mode = sniper_mode_var.get()
+    tracking_smoothness = tracking_smoothness_var.get()
+    auto_distance_adjustment = auto_distance_adjustment_var.get()
+    crosshair_size = crosshair_size_var.get()
+    dynamic_aim_lock = dynamic_aim_lock_var.get()
+    no_snap_tracking = no_snap_tracking_var.get()
+    gentle_flicks = gentle_flicks_var.get()
+    smooth_lead_tracking = smooth_lead_tracking_var.get()
+    crosshair_visibility = crosshair_visibility_var.get()
+    hard_lock_tracking = hard_lock_tracking_var.get()
+    bullet_curve_adjustment = bullet_curve_adjustment_var.get()
+    instant_reaction_aim = instant_reaction_aim_var.get()
+    esp_mode = esp_mode_var.get()
+    flick_speed = flick_speed_var.get()
+
+    print(f"Settings Applied:")
+    print(f"Precision Aim: {precision_aim}, Flick Aim: {flick_aim}, Smooth Track: {smooth_track}")
+    print(f"Sticky Aim: {sticky_aim}, Lead Tracking: {lead_tracking}, Sniper Mode: {sniper_mode}")
+    print(f"Tracking Smoothness: {tracking_smoothness}, Auto Distance Adjustment: {auto_distance_adjustment}")
+    print(f"Crosshair Size: {crosshair_size}, Dynamic Aim Lock: {dynamic_aim_lock}")
+    print(f"No Snap Tracking: {no_snap_tracking}, Gentle Flicks: {gentle_flicks}")
+    print(f"Smooth Lead Tracking: {smooth_lead_tracking}, Crosshair Visibility: {crosshair_visibility}")
+    print(f"Hard Lock Tracking: {hard_lock_tracking}, Bullet Curve Adjustment: {bullet_curve_adjustment}")
+    print(f"Instant Reaction Aim: {instant_reaction_aim}, ESP Mode: {esp_mode}, Flick Speed: {flick_speed}")
+
+    save_settings()
+
+def save_settings():
+    settings = {
+        "precision_aim": precision_aim,
+        "flick_aim": flick_aim,
+        "smooth_track": smooth_track,
+        "sticky_aim": sticky_aim,
+        "lead_tracking": lead_tracking,
+        "sniper_mode": sniper_mode,
+        "tracking_smoothness": tracking_smoothness,
+        "auto_distance_adjustment": auto_distance_adjustment,
+        "crosshair_size": crosshair_size,
+        "dynamic_aim_lock": dynamic_aim_lock,
+        "no_snap_tracking": no_snap_tracking,
+        "gentle_flicks": gentle_flicks,
+        "smooth_lead_tracking": smooth_lead_tracking,
+        "crosshair_visibility": crosshair_visibility,
+        "hard_lock_tracking": hard_lock_tracking,
+        "bullet_curve_adjustment": bullet_curve_adjustment,
+        "instant_reaction_aim": instant_reaction_aim,
+        "esp_mode": esp_mode,
+        "flick_speed": flick_speed
+    }
+    with open(settings_file, "w") as f:
+        json.dump(settings, f)
+    messagebox.showinfo("Settings", "Settings saved successfully!")
+
+def load_settings():
+    global precision_aim, flick_aim, smooth_track, sticky_aim, lead_tracking
+    global sniper_mode, tracking_smoothness, auto_distance_adjustment, crosshair_size
+    global dynamic_aim_lock, no_snap_tracking, gentle_flicks, smooth_lead_tracking
+    global crosshair_visibility, hard_lock_tracking, bullet_curve_adjustment
+    global instant_reaction_aim, esp_mode, flick_speed
+
+    try:
+        with open(settings_file, "r") as f:
+            settings = json.load(f)
+            precision_aim = settings.get("precision_aim", False)
+            flick_aim = settings.get("flick_aim", False)
+            smooth_track = settings.get("smooth_track", False)
+            sticky_aim = settings.get("sticky_aim", False)
+            lead_tracking = settings.get("lead_tracking", False)
+            sniper_mode = settings.get("sniper_mode", False)
+            tracking_smoothness = settings.get("tracking_smoothness", 0.5)
+            auto_distance_adjustment = settings.get("auto_distance_adjustment", False)
+            crosshair_size = settings.get("crosshair_size", 5)
+            dynamic_aim_lock = settings.get("dynamic_aim_lock", False)
+            no_snap_tracking = settings.get("no_snap_tracking", False)
+            gentle_flicks = settings.get("gentle_flicks", False)
+            smooth_lead_tracking = settings.get("smooth_lead_tracking", False)
+            crosshair_visibility = settings.get("crosshair_visibility", 1.0)
+            hard_lock_tracking = settings.get("hard_lock_tracking", False)
+            bullet_curve_adjustment = settings.get("bullet_curve_adjustment", False)
+            instant_reaction_aim = settings.get("instant_reaction_aim", False)
+            esp_mode = settings.get("esp_mode", False)
+            flick_speed = settings.get("flick_speed", 1.0)
+    except FileNotFoundError:
+        pass
+
+def create_gui():
+    global precision_aim_var, flick_aim_var, smooth_track_var, sticky_aim_var, lead_tracking_var
+    global sniper_mode_var, tracking_smoothness_var, auto_distance_adjustment_var, crosshair_size_var
+    global dynamic_aim_lock_var, no_snap_tracking_var, gentle_flicks_var, smooth_lead_tracking_var
+    global crosshair_visibility_var, hard_lock_tracking_var, bullet_curve_adjustment_var
+    global instant_reaction_aim_var, esp_mode_var, flick_speed_var
+
+    # Main window
+    root = ThemedTk(theme="arc")
+    root.title("Ultimate Fortnite Aim Mod - Kirahh's Opp Opener (KOO)")
+    root.geometry("1200x600")  # Wide stretched layout
+    root.configure(bg="#1E1E1E")  # Dark theme
+
+    # Blurred background
+    background = create_blurred_background(root)
+
+    # Style config
+    style = ttk.Style()
+    style.configure("TButton",
+                    font=("Arial", 12),
+                    foreground="#E0E0E0",
+                    background="#3A3A3A",
+                    relief="flat",
+                    width=15)
+    style.configure("TCheckbutton",
+                    font=("Arial", 12),
+                    foreground="#E0E0E0",
+                    background="#1E1E1E")
+    style.configure("TLabel",
+                    font=("Arial", 12),
+                    foreground="#E0E0E0",
+                    background="#1E1E1E")
+
+    # Notebook for tabs
+    notebook = ttk.Notebook(root)
+    notebook.pack(expand=True, fill='both')
+
+    # Frame for aim settings
+    aim_frame = ttk.Frame(notebook, width=1200, height=550)
+    aim_frame.pack(fill='both', expand=True)
+    notebook.add(aim_frame, text='Aim Settings')
+
+    # Frame for other settings
+    other_frame = ttk.Frame(notebook, width=1200, height=550)
+    other_frame.pack(fill='both', expand=True)
+    notebook.add(other_frame, text='Other Settings')
+
+    # Categories of aim settings
+    categories = [
+        ("Precision Aim", tk.BooleanVar()),
+        ("Flick Aim", tk.BooleanVar()),
+        ("Smooth Tracking", tk.BooleanVar()),
+        ("Sticky Aim", tk.BooleanVar()),
+        ("Lead Tracking", tk.BooleanVar()),
+        ("Sniper Mode", tk.BooleanVar()),
+        ("Dynamic Aim Lock", tk.BooleanVar()),
+        ("No Snap Tracking", tk.BooleanVar()),
+        ("Gentle Flicks", tk.BooleanVar()),
+        ("ESP Mode", tk.BooleanVar()),
+        ("Bullet Curve Adjustments", tk.BooleanVar()),
+        ("Instant Reaction Aim", tk.BooleanVar())
+    ]
+
+    # Create variables for each setting
+    precision_aim_var = categories[0][1]
+    flick_aim_var = categories[1][1]
+    smooth_track_var = categories[2][1]
+    sticky_aim_var = categories[3][1]
+    lead_tracking_var = categories[4][1]
+    sniper_mode_var = categories[5][1]
+    dynamic_aim_lock_var = categories[6][1]
+    no_snap_tracking_var = categories[7][1]
+    gentle_flicks_var = categories[8][1]
+    esp_mode_var = categories[9][1]
+    bullet_curve_adjustment_var = categories[10][1]
+    instant_reaction_aim_var = categories[11][1]
+
+    # Place checkboxes in a grid
+    row = 0
+    for text, var in categories:
+        ttk.Label(aim_frame, text=text).grid(row=row, column=0, padx=20, pady=10, sticky='w')
+        ttk.Checkbutton(aim_frame, variable=var).grid(row=row, column=1, padx=20, pady=10, sticky='w')
+        row += 1
+
+    # Additional settings in other_frame
+    ttk.Label(other_frame, text="Tracking Smoothness").grid(row=0, column=0, padx=20, pady=10, sticky='w')
+    tracking_smoothness_var = tk.DoubleVar(value=tracking_smoothness)
+    ttk.Scale(other_frame, from_=0.1, to=1.0, variable=tracking_smoothness_var, orient='horizontal').grid(row=0, column=1, padx=20, pady=10, sticky='w')
+
+    ttk.Label(other_frame, text="Crosshair Size").grid(row=1, column=0, padx=20, pady=10, sticky='w')
+    crosshair_size_var = tk.IntVar(value=crosshair_size)
+    ttk.Scale(other_frame, from_=1, to=10, variable=crosshair_size_var, orient='horizontal').grid(row=1, column=1, padx=20, pady=10, sticky='w')
+
+    ttk.Label(other_frame, text="Crosshair Visibility").grid(row=2, column=0, padx=20, pady=10, sticky='w')
+    crosshair_visibility_var = tk.DoubleVar(value=crosshair_visibility)
+    ttk.Scale(other_frame, from_=0.1, to=1.0, variable=crosshair_visibility_var, orient='horizontal').grid(row=2, column=1, padx=20, pady=10, sticky='w')
+
+    ttk.Label(other_frame, text="Flick Speed").grid(row=3, column=0, padx=20, pady=10, sticky='w')
+    flick_speed_var = tk.DoubleVar(value=flick_speed)
+    ttk.Scale(other_frame, from_=0.1, to=2.0, variable=flick_speed_var, orient='horizontal').grid(row=3, column=1, padx=20, pady=10, sticky='w')
+
+    # Apply button
+    apply_button = ttk.Button(root, text="Apply Settings", command=apply_settings)
+    apply_button.pack(pady=10)
+
+    # Keep the background in focus
+    if background:
+        background.image = background
+
+    # Load settings on startup
+    load_settings()
+
+    # Start GUI
+    root.mainloop()
+
+create_gui()
